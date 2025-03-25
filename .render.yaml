@@ -1,0 +1,22 @@
+env:
+  - key: RENDER_PYTHON_BUILD_SETUP
+    value: "pip"
+
+services:
+  - type: web
+    name: boxrate
+    runtime: python
+    region: oregon
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "python app.py"
+    envVars:
+      - key: SHOPIFY_STORE_DOMAIN
+        sync: false
+      - key: SHOPIFY_ACCESS_TOKEN
+        sync: false
+      - key: SHIPSTATION_API_KEY
+        sync: false
+      - key: SHIPSTATION_API_SECRET
+        sync: false
+      - key: ORIGIN_POSTAL_CODE
+        sync: false
