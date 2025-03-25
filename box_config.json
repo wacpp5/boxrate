@@ -1,1 +1,86 @@
-
+[
+  {
+    "name": "10x8x6",
+    "length": 10,
+    "width": 8,
+    "height": 6,
+    "maxWeight": 999
+  },
+  {
+    "name": "12x10x6",
+    "length": 12,
+    "width": 10,
+    "height": 6,
+    "maxWeight": 999
+  },
+  {
+    "name": "12x10x7",
+    "length": 12,
+    "width": 10,
+    "height": 7,
+    "maxWeight": 999
+  },
+  {
+    "name": "12x12x12",
+    "length": 12,
+    "width": 12,
+    "height": 12,
+    "maxWeight": 999
+  },
+  {
+    "name": "12x12x9",
+    "length": 12,
+    "width": 12,
+    "height": 9,
+    "maxWeight": 999
+  },
+  {
+    "name": "12x9x9",
+    "length": 12,
+    "width": 9,
+    "height": 9,
+    "maxWeight": 999
+  },
+  {
+    "name": "14x12x6",
+    "length": 14,
+    "width": 12,
+    "height": 6,
+    "maxWeight": 999
+  },
+  {
+    "name": "18x12x10",
+    "length": 18,
+    "width": 12,
+    "height": 10,
+    "maxWeight": 999
+  },
+  {
+    "name": "6x6x6",
+    "length": 6,
+    "width": 6,
+    "height": 6,
+    "maxWeight": 999
+  },
+  {
+    "name": "7x5x5",
+    "length": 7,
+    "width": 5,
+    "height": 5,
+    "maxWeight": 999
+  },
+  {
+    "name": "7x7x7",
+    "length": 7,
+    "width": 7,
+    "height": 7,
+    "maxWeight": 999
+  },
+  {
+    "name": "8x6x6",
+    "length": 8,
+    "width": 6,
+    "height": 6,
+    "maxWeight": 999
+  }
+]
