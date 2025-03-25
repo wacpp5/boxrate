@@ -3,6 +3,7 @@ from flask import Flask, request, jsonify
 from shopify import build_item_list
 from box_selector import select_best_box
 from shipstation import get_shipping_rates
+from utils import convert_decimals
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -12,12 +13,10 @@ app = Flask(__name__)
 @app.route("/estimate-shipping", methods=["GET"])
 def estimate_shipping():
     try:
-        # Expected query parameters: zip, variant_id=qty&...
         zip_code = request.args.get("zip")
         if not zip_code:
             return jsonify({"error": "Missing ZIP code"}), 400
 
-        # Parse cart items from query params
         cart = {}
         for key, value in request.args.items():
             if key != "zip":
@@ -31,7 +30,7 @@ def estimate_shipping():
         if "error" in box_info:
             return jsonify(box_info), 400
 
-        total_weight = sum(item["weight"] for item in items)
+        total_weight = sum(float(item["weight"]) for item in items)
 
         to_address = {
             "postal_code": zip_code,
@@ -39,10 +38,11 @@ def estimate_shipping():
         }
 
         rates = get_shipping_rates(to_address, box_info["box_dimensions"], total_weight)
-        return jsonify({
+
+        return jsonify(convert_decimals({
             "box": box_info["box"],
             "rates": rates
-        })
+        }))
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -51,7 +51,7 @@ def assign_box_and_shipstation():
     try:
         data = request.json
         to_address = data.get("to_address")
-        cart = data.get("cart")  # {variant_id: quantity}
+        cart = data.get("cart")
 
         if not to_address or not cart:
             return jsonify({"error": "Missing to_address or cart"}), 400
@@ -64,17 +64,17 @@ def assign_box_and_shipstation():
         if "error" in box_info:
             return jsonify(box_info), 400
 
-        total_weight = sum(item["weight"] for item in items)
+        total_weight = sum(float(item["weight"]) for item in items)
 
         rates = get_shipping_rates(to_address, box_info["box_dimensions"], total_weight)
-        return jsonify({
+
+        return jsonify(convert_decimals({
             "box": box_info["box"],
             "box_dimensions": box_info["box_dimensions"],
             "rates": rates
-        })
+        }))
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)), debug=True)
-
