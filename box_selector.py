@@ -8,7 +8,7 @@ def load_boxes(config_path="box_config.json"):
 
 # Calculate volume
 def get_volume(length, width, height):
-    return length * width * height
+    return float(length) * float(width) * float(height)
 
 # Accept a list of items in the format: {"id": "123", "length": 4, "width": 3, "height": 2, "weight": 1}
 def select_best_box(items, config_path="box_config.json", dunnage_ratio=0.25):
@@ -19,10 +19,10 @@ def select_best_box(items, config_path="box_config.json", dunnage_ratio=0.25):
     for box in boxes:
         bin = Bin(
             name=box["name"],
-            width=box["width"],
-            height=box["height"],
-            depth=box["length"],
-            max_weight=box["maxWeight"]
+            width=float(box["width"]),
+            height=float(box["height"]),
+            depth=float(box["length"]),
+            max_weight=float(box["maxWeight"])
         )
         packer.add_bin(bin)
 
@@ -30,10 +30,10 @@ def select_best_box(items, config_path="box_config.json", dunnage_ratio=0.25):
     for i, item in enumerate(items):
         packer.add_item(Item(
             name=item.get("id", f"item-{i}"),
-            width=item["width"],
-            height=item["height"],
-            depth=item["length"],
-            weight=item["weight"]
+            width=float(item["width"]),
+            height=float(item["height"]),
+            depth=float(item["length"]),
+            weight=float(item["weight"])
         ))
 
     # Perform packing
