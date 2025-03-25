@@ -5,13 +5,10 @@ SHIPSTATION_API_KEY = os.getenv("SHIPSTATION_API_KEY")
 SHIPSTATION_API_SECRET = os.getenv("SHIPSTATION_API_SECRET")
 ORIGIN_POSTAL_CODE = os.getenv("ORIGIN_POSTAL_CODE")
 
-# Get a live rate from ShipStation using box dimensions, weight, and destination address
-def get_shipping_rate(to_address, box, weight_lbs):
+def get_shipping_rates(to_address, box, weight_lbs):
     url = "https://ssapi.shipstation.com/shipments/getrates"
 
-    # Fallback carrier/service can be configured later
     payload = {
-        "carrierCode": "stamps_com",  # USPS via Stamps.com
         "fromPostalCode": ORIGIN_POSTAL_CODE,
         "toState": to_address.get("state"),
         "toCountry": to_address.get("country", "US"),
@@ -38,15 +35,52 @@ def get_shipping_rate(to_address, box, weight_lbs):
         json=payload
     )
 
-    if res.status_code == 200:
-        rates = res.json()
-        if rates:
-            # Return the cheapest rate
-            rates.sort(key=lambda r: r["shipmentCost"])
-            return {
-                "service": rates[0]["serviceCode"],
-                "carrier": rates[0]["carrierCode"],
-                "amount": rates[0]["shipmentCost"],
-                "delivery_days": rates[0].get("deliveryDays")
-            }
-    return {"error": f"ShipStation error {res.status_code}: {res.text}"}
+    if res.status_code != 200:
+        return {"error": f"ShipStation error {res.status_code}: {res.text}"}
+
+    all_rates = res.json()
+    if not all_rates:
+        return {"error": "No rates returned by ShipStation."}
+
+    # Prepare options
+    no_rush_candidates = []
+    ups_ground = None
+    usps_priority = None
+
+    for rate in all_rates:
+        service = rate["serviceCode"]
+        if service in ["usps_ground_advantage", "ups_ground_saver"]:
+            no_rush_candidates.append(rate)
+        elif service == "ups_ground":
+            ups_ground = rate
+        elif service == "usps_priority_mail":
+            usps_priority = rate
+
+    # Pick cheapest of no-rush candidates
+    no_rush = None
+    if no_rush_candidates:
+        no_rush = min(no_rush_candidates, key=lambda r: r["shipmentCost"])
+
+    return {
+        "no_rush": {
+            "label": "No Rush Shipping",
+            "service": no_rush["serviceCode"] if no_rush else None,
+            "carrier": no_rush["carrierCode"] if no_rush else None,
+            "amount": no_rush["shipmentCost"] if no_rush else None,
+            "delivery_days": no_rush.get("deliveryDays") if no_rush else None
+        },
+        "ups_ground": {
+            "label": "UPS Ground",
+            "service": ups_ground["serviceCode"] if ups_ground else None,
+            "carrier": ups_ground["carrierCode"] if ups_ground else None,
+            "amount": ups_ground["shipmentCost"] if ups_ground else None,
+            "delivery_days": ups_ground.get("deliveryDays") if ups_ground else None
+        },
+        "usps_priority": {
+            "label": "USPS Priority Mail",
+            "service": usps_priority["serviceCode"] if usps_priority else None,
+            "carrier": usps_priority["carrierCode"] if usps_priority else None,
+            "amount": usps_priority["shipmentCost"] if usps_priority else None,
+            "delivery_days": usps_priority.get("deliveryDays") if usps_priority else None
+        }
+    }
