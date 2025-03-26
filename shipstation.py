@@ -1,5 +1,9 @@
 import os
 import requests
+import logging
+
+# Setup logging
+logging.basicConfig(level=logging.INFO)
 
 SHIPSTATION_API_KEY = os.getenv("SHIPSTATION_API_KEY")
 SHIPSTATION_API_SECRET = os.getenv("SHIPSTATION_API_SECRET")
@@ -59,9 +63,9 @@ def get_shipping_rates(to_address, box, weight_lbs):
             usps_priority = rate
 
     # Log all no_rush_candidates to ensure ups_ground_saver is being captured
-    print("DEBUG: No Rush Candidates:")
+    logging.info("DEBUG: No Rush Candidates:")
     for r in no_rush_candidates:
-        print(f"  - {r.get('serviceCode')}: ${r.get('shipmentCost')}")
+        logging.info(f"  - {r.get('serviceCode')}: ${r.get('shipmentCost')}")
 
     no_rush = None
     if no_rush_candidates:
