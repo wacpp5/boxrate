@@ -11,7 +11,7 @@ def get_volume(length, width, height):
     return float(length) * float(width) * float(height)
 
 # Accept a list of items in the format: {"id": "123", "length": 4, "width": 3, "height": 2, "weight": 1}
-def select_best_box(items, config_path="box_config.json", dunnage_ratio=0.25):
+def select_best_box(items, config_path="box_config.json", dunnage_ratio=0.10):
     boxes = load_boxes(config_path)
     packer = Packer()
 
@@ -39,7 +39,7 @@ def select_best_box(items, config_path="box_config.json", dunnage_ratio=0.25):
     # Perform packing
     packer.pack(bigger_first=False, distribute_items=False)
 
-    # Find the first box that fits all items and leaves 25% for dunnage
+    # Find the first box that fits all items and leaves room for dunnage
     for bin in packer.bins:
         if len(bin.items) == len(items):
             box_volume = get_volume(bin.depth, bin.width, bin.height)
