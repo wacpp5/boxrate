@@ -58,6 +58,11 @@ def get_shipping_rates(to_address, box, weight_lbs):
         elif service == "usps_priority_mail":
             usps_priority = rate
 
+    # Log all no_rush_candidates to ensure ups_ground_saver is being captured
+    print("DEBUG: No Rush Candidates:")
+    for r in no_rush_candidates:
+        print(f"  - {r.get('serviceCode')}: ${r.get('shipmentCost')}")
+
     no_rush = None
     if no_rush_candidates:
         no_rush = min(no_rush_candidates, key=lambda r: r.get("shipmentCost", float("inf")))
