@@ -5,11 +5,12 @@ SHIPSTATION_API_KEY = os.getenv("SHIPSTATION_API_KEY")
 SHIPSTATION_API_SECRET = os.getenv("SHIPSTATION_API_SECRET")
 ORIGIN_POSTAL_CODE = os.getenv("ORIGIN_POSTAL_CODE")
 
-def get_shipping_rates(to_address, box, weight_lbs):
-    url = "https://ssapi.shipstation.com/shipments/getrates"
+CARRIER_CODES = ["stamps_com", "ups_walleted"]
 
+def get_rates_from_carrier(carrier_code, to_address, box, weight_lbs):
+    url = "https://ssapi.shipstation.com/shipments/getrates"
     payload = {
-        # "carrierCode": "stamps_com",  # Removed to allow all carriers
+        "carrierCode": carrier_code,
         "fromPostalCode": ORIGIN_POSTAL_CODE,
         "toState": to_address.get("state"),
         "toCountry": to_address.get("country", "US"),
@@ -30,18 +31,19 @@ def get_shipping_rates(to_address, box, weight_lbs):
         "residential": True
     }
 
-    res = requests.post(
-        url,
-        auth=(SHIPSTATION_API_KEY, SHIPSTATION_API_SECRET),
-        json=payload
-    )
+    res = requests.post(url, auth=(SHIPSTATION_API_KEY, SHIPSTATION_API_SECRET), json=payload)
+    if res.status_code == 200:
+        return res.json()
+    return []
 
-    if res.status_code != 200:
-        return {"error": f"ShipStation error {res.status_code}: {res.text}"}
+def get_shipping_rates(to_address, box, weight_lbs):
+    all_rates = []
+    for carrier in CARRIER_CODES:
+        rates = get_rates_from_carrier(carrier, to_address, box, weight_lbs)
+        all_rates.extend(rates)
 
-    all_rates = res.json()
     if not all_rates:
-        return {"error": "No rates returned by ShipStation."}
+        return {"error": "No rates returned from any carrier."}
 
     no_rush_candidates = []
     ups_ground = None
