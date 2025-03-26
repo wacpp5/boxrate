@@ -1,5 +1,6 @@
 import os
-from flask import Flask, request, jsonify
+import json
+from flask import Flask, request, Response
 from shopify import build_item_list
 from box_selector import select_best_box
 from shipstation import get_shipping_rates
@@ -15,7 +16,7 @@ def estimate_shipping():
     try:
         zip_code = request.args.get("zip")
         if not zip_code:
-            return jsonify(convert_decimals({"error": "Missing ZIP code"})), 400
+            return Response(json.dumps(convert_decimals({"error": "Missing ZIP code"})), mimetype="application/json"), 400
 
         cart = {}
         for key, value in request.args.items():
@@ -24,11 +25,11 @@ def estimate_shipping():
 
         items = build_item_list(cart)
         if not items:
-            return jsonify(convert_decimals({"error": "No valid items found"})), 400
+            return Response(json.dumps(convert_decimals({"error": "No valid items found"})), mimetype="application/json"), 400
 
         box_info = select_best_box(items)
         if "error" in box_info:
-            return jsonify(convert_decimals(box_info)), 400
+            return Response(json.dumps(convert_decimals(box_info)), mimetype="application/json"), 400
 
         total_weight = sum(float(item["weight"]) for item in items)
 
@@ -39,12 +40,12 @@ def estimate_shipping():
 
         rates = get_shipping_rates(to_address, box_info["box_dimensions"], total_weight)
 
-        return jsonify(convert_decimals({
+        return Response(json.dumps(convert_decimals({
             "box": box_info["box"],
             "rates": rates
-        }))
+        })), mimetype="application/json")
     except Exception as e:
-        return jsonify(convert_decimals({"error": str(e)})), 500
+        return Response(json.dumps(convert_decimals({"error": str(e)})), mimetype="application/json"), 500
 
 @app.route("/assign-box-and-shipstation", methods=["POST"])
 def assign_box_and_shipstation():
@@ -54,27 +55,27 @@ def assign_box_and_shipstation():
         cart = data.get("cart")
 
         if not to_address or not cart:
-            return jsonify(convert_decimals({"error": "Missing to_address or cart"})), 400
+            return Response(json.dumps(convert_decimals({"error": "Missing to_address or cart"})), mimetype="application/json"), 400
 
         items = build_item_list(cart)
         if not items:
-            return jsonify(convert_decimals({"error": "No valid items found"})), 400
+            return Response(json.dumps(convert_decimals({"error": "No valid items found"})), mimetype="application/json"), 400
 
         box_info = select_best_box(items)
         if "error" in box_info:
-            return jsonify(convert_decimals(box_info)), 400
+            return Response(json.dumps(convert_decimals(box_info)), mimetype="application/json"), 400
 
         total_weight = sum(float(item["weight"]) for item in items)
 
         rates = get_shipping_rates(to_address, box_info["box_dimensions"], total_weight)
 
-        return jsonify(convert_decimals({
+        return Response(json.dumps(convert_decimals({
             "box": box_info["box"],
             "box_dimensions": box_info["box_dimensions"],
             "rates": rates
-        }))
+        })), mimetype="application/json")
     except Exception as e:
-        return jsonify(convert_decimals({"error": str(e)})), 500
+        return Response(json.dumps(convert_decimals({"error": str(e)})), mimetype="application/json"), 500
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)), debug=True)
