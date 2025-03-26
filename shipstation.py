@@ -9,7 +9,7 @@ def get_shipping_rates(to_address, box, weight_lbs):
     url = "https://ssapi.shipstation.com/shipments/getrates"
 
     payload = {
-        "carrierCode": "stamps_com",
+        # "carrierCode": "stamps_com",  # Removed to allow all carriers
         "fromPostalCode": ORIGIN_POSTAL_CODE,
         "toState": to_address.get("state"),
         "toCountry": to_address.get("country", "US"),
