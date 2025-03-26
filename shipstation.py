@@ -9,7 +9,7 @@ def get_shipping_rates(to_address, box, weight_lbs):
     url = "https://ssapi.shipstation.com/shipments/getrates"
 
     payload = {
-        "carrierCode": "stamps_com",  # Required: defaults to USPS (Stamps.com)
+        "carrierCode": "stamps_com",
         "fromPostalCode": ORIGIN_POSTAL_CODE,
         "toState": to_address.get("state"),
         "toCountry": to_address.get("country", "US"),
@@ -48,7 +48,7 @@ def get_shipping_rates(to_address, box, weight_lbs):
     usps_priority = None
 
     for rate in all_rates:
-        service = rate["serviceCode"]
+        service = rate.get("serviceCode")
         if service in ["usps_ground_advantage", "ups_ground_saver"]:
             no_rush_candidates.append(rate)
         elif service == "ups_ground":
@@ -58,28 +58,21 @@ def get_shipping_rates(to_address, box, weight_lbs):
 
     no_rush = None
     if no_rush_candidates:
-        no_rush = min(no_rush_candidates, key=lambda r: r["shipmentCost"])
+        no_rush = min(no_rush_candidates, key=lambda r: r.get("shipmentCost", float("inf")))
+
+    def format_rate(rate, label):
+        if not rate:
+            return {"label": label, "carrier": None, "service": None, "amount": None, "delivery_days": None}
+        return {
+            "label": label,
+            "service": rate.get("serviceCode"),
+            "carrier": rate.get("carrierCode"),
+            "amount": float(rate.get("shipmentCost", 0)),
+            "delivery_days": rate.get("deliveryDays")
+        }
 
     return {
-        "no_rush": {
-            "label": "No Rush Shipping",
-            "service": no_rush["serviceCode"] if no_rush else None,
-            "carrier": no_rush["carrierCode"] if no_rush else None,
-            "amount": float(no_rush["shipmentCost"]) if no_rush else None,
-            "delivery_days": no_rush.get("deliveryDays")
-        },
-        "ups_ground": {
-            "label": "UPS Ground",
-            "service": ups_ground["serviceCode"] if ups_ground else None,
-            "carrier": ups_ground["carrierCode"] if ups_ground else None,
-            "amount": float(ups_ground["shipmentCost"]) if ups_ground else None,
-            "delivery_days": ups_ground.get("deliveryDays") if ups_ground else None
-        },
-        "usps_priority": {
-            "label": "USPS Priority Mail",
-            "service": usps_priority["serviceCode"] if usps_priority else None,
-            "carrier": usps_priority["carrierCode"] if usps_priority else None,
-            "amount": float(usps_priority["shipmentCost"]) if usps_priority else None,
-            "delivery_days": usps_priority.get("deliveryDays") if usps_priority else None
-        }
+        "no_rush": format_rate(no_rush, "No Rush Shipping"),
+        "ups_ground": format_rate(ups_ground, "UPS Ground"),
+        "usps_priority": format_rate(usps_priority, "USPS Priority Mail")
     }
