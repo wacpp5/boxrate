@@ -15,7 +15,7 @@ def estimate_shipping():
     try:
         zip_code = request.args.get("zip")
         if not zip_code:
-            return jsonify({"error": "Missing ZIP code"}), 400
+            return jsonify(convert_decimals({"error": "Missing ZIP code"})), 400
 
         cart = {}
         for key, value in request.args.items():
@@ -24,11 +24,11 @@ def estimate_shipping():
 
         items = build_item_list(cart)
         if not items:
-            return jsonify({"error": "No valid items found"}), 400
+            return jsonify(convert_decimals({"error": "No valid items found"})), 400
 
         box_info = select_best_box(items)
         if "error" in box_info:
-            return jsonify(box_info), 400
+            return jsonify(convert_decimals(box_info)), 400
 
         total_weight = sum(float(item["weight"]) for item in items)
 
@@ -44,7 +44,7 @@ def estimate_shipping():
             "rates": rates
         }))
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return jsonify(convert_decimals({"error": str(e)})), 500
 
 @app.route("/assign-box-and-shipstation", methods=["POST"])
 def assign_box_and_shipstation():
@@ -54,15 +54,15 @@ def assign_box_and_shipstation():
         cart = data.get("cart")
 
         if not to_address or not cart:
-            return jsonify({"error": "Missing to_address or cart"}), 400
+            return jsonify(convert_decimals({"error": "Missing to_address or cart"})), 400
 
         items = build_item_list(cart)
         if not items:
-            return jsonify({"error": "No valid items found"}), 400
+            return jsonify(convert_decimals({"error": "No valid items found"})), 400
 
         box_info = select_best_box(items)
         if "error" in box_info:
-            return jsonify(box_info), 400
+            return jsonify(convert_decimals(box_info)), 400
 
         total_weight = sum(float(item["weight"]) for item in items)
 
@@ -74,7 +74,7 @@ def assign_box_and_shipstation():
             "rates": rates
         }))
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return jsonify(convert_decimals({"error": str(e)})), 500
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)), debug=True)
