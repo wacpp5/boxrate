@@ -43,18 +43,18 @@ def select_best_box(items, config_path="box_config.json", dunnage_ratio=0.25):
     for bin in packer.bins:
         if len(bin.items) == len(items):
             box_volume = get_volume(bin.depth, bin.width, bin.height)
-            used_volume = sum([item.get_volume() for item in bin.items])
+            used_volume = float(sum([item.get_volume() for item in bin.items]))
             if used_volume <= box_volume * (1 - dunnage_ratio):
                 return {
                     "box": bin.name,
                     "box_dimensions": {
-                        "length": bin.depth,
-                        "width": bin.width,
-                        "height": bin.height
+                        "length": float(bin.depth),
+                        "width": float(bin.width),
+                        "height": float(bin.height)
                     },
                     "used_volume": used_volume,
-                    "box_volume": box_volume,
-                    "dunnage_reserved": box_volume * dunnage_ratio,
+                    "box_volume": float(box_volume),
+                    "dunnage_reserved": float(box_volume * dunnage_ratio),
                     "items": [item.name for item in bin.items]
                 }
 
