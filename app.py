@@ -13,72 +13,6 @@ logging.basicConfig(level=logging.INFO)
 
 app = Flask(__name__)
 
-@app.route("/estimate-shipping", methods=["GET"])
-def estimate_shipping():
-    try:
-        zip_code = request.args.get("zip")
-        if not zip_code:
-            return Response(json.dumps(convert_decimals({"error": "Missing ZIP code"})), mimetype="application/json"), 400
-
-        cart = {}
-        for key, value in request.args.items():
-            if key != "zip":
-                cart[key] = int(value)
-
-        items = build_item_list(cart)
-        if not items:
-            return Response(json.dumps(convert_decimals({"error": "No valid items found"})), mimetype="application/json"), 400
-
-        box_info = select_best_box(items)
-        if "error" in box_info:
-            return Response(json.dumps(convert_decimals(box_info)), mimetype="application/json"), 400
-
-        total_weight = sum(float(item["weight"]) for item in items)
-
-        to_address = {
-            "postal_code": zip_code,
-            "country": "US"
-        }
-
-        rates = get_shipping_rates(to_address, box_info["box_dimensions"], total_weight)
-
-        return Response(json.dumps(convert_decimals({
-            "box": box_info["box"],
-            "rates": rates
-        })), mimetype="application/json")
-    except Exception as e:
-        return Response(json.dumps(convert_decimals({"error": str(e)})), mimetype="application/json"), 500
-
-@app.route("/assign-box-and-shipstation", methods=["POST"])
-def assign_box_and_shipstation():
-    try:
-        data = request.json
-        to_address = data.get("to_address")
-        cart = data.get("cart")
-
-        if not to_address or not cart:
-            return Response(json.dumps(convert_decimals({"error": "Missing to_address or cart"})), mimetype="application/json"), 400
-
-        items = build_item_list(cart)
-        if not items:
-            return Response(json.dumps(convert_decimals({"error": "No valid items found"})), mimetype="application/json"), 400
-
-        box_info = select_best_box(items)
-        if "error" in box_info:
-            return Response(json.dumps(convert_decimals(box_info)), mimetype="application/json"), 400
-
-        total_weight = sum(float(item["weight"]) for item in items)
-
-        rates = get_shipping_rates(to_address, box_info["box_dimensions"], total_weight)
-
-        return Response(json.dumps(convert_decimals({
-            "box": box_info["box"],
-            "box_dimensions": box_info["box_dimensions"],
-            "rates": rates
-        })), mimetype="application/json")
-    except Exception as e:
-        return Response(json.dumps(convert_decimals({"error": str(e)})), mimetype="application/json"), 500
-
 @app.route("/carrier-service", methods=["POST"])
 def carrier_service():
     try:
@@ -101,14 +35,18 @@ def carrier_service():
         }
 
         items = build_item_list(cart)
+        use_fallback = False
         if not items:
-            return Response(json.dumps({"rates": []}), mimetype="application/json")
+            use_fallback = True
 
-        box_info = select_best_box(items)
+        box_info = select_best_box(items) if not use_fallback else {"box": "10x8x6", "box_dimensions": {"length": 10, "width": 8, "height": 6}}
+
         if "error" in box_info:
-            return Response(json.dumps({"rates": []}), mimetype="application/json")
+            use_fallback = True
+            box_info = {"box": "10x8x6", "box_dimensions": {"length": 10, "width": 8, "height": 6}}
 
-        total_weight = sum(float(item["weight"]) for item in items)
+        total_weight = sum(float(item["weight"]) for item in items) if not use_fallback else 3.0
+
         to_address = {
             "postal_code": zip_code,
             "country": country,
@@ -122,7 +60,7 @@ def carrier_service():
         shopify_rates = []
         if rates["no_rush"]["amount"] is not None:
             shopify_rates.append({
-                "service_name": "No Rush Shipping",
+                "service_name": "No Rush Shipping (test)",
                 "service_code": "no_rush",
                 "total_price": str(int(float(rates["no_rush"]["amount"]) * 100)),
                 "currency": "USD",
@@ -131,7 +69,7 @@ def carrier_service():
             })
         if rates["ups_ground"]["amount"] is not None:
             shopify_rates.append({
-                "service_name": "UPS Ground",
+                "service_name": "UPS Ground (test)",
                 "service_code": "ups_ground",
                 "total_price": str(int(float(rates["ups_ground"]["amount"]) * 100)),
                 "currency": "USD",
@@ -140,7 +78,7 @@ def carrier_service():
             })
         if rates["usps_priority"]["amount"] is not None:
             shopify_rates.append({
-                "service_name": "USPS Priority Mail",
+                "service_name": "USPS Priority Mail (test)",
                 "service_code": "usps_priority",
                 "total_price": str(int(float(rates["usps_priority"]["amount"]) * 100)),
                 "currency": "USD",
