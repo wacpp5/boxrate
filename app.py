@@ -47,6 +47,8 @@ def carrier_service():
 
         total_weight = sum(float(item["weight"]) for item in items) if not use_fallback else 3.0
 
+        logging.info(f"🧱 Selected box: {box_info['box']}, dimensions: {box_info['box_dimensions']}, total weight: {total_weight}, fallback used: {use_fallback}")
+
         to_address = {
             "postal_code": zip_code,
             "country": country,
