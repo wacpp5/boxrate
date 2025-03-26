@@ -63,7 +63,7 @@ def carrier_service():
 
         shopify_rates = []
         if to_address.get("country", "US") in ["CA", "MX", "AU"]:
-            if rates["usps_priority_intl"]["amount"] is not None:
+            if rates.get("usps_priority_intl") and rates["usps_priority_intl"].get("amount") is not None:
                 shopify_rates.append({
                     "service_name": "USPS Priority Mail International (test)",
                     "service_code": "usps_priority_intl",
@@ -72,7 +72,7 @@ def carrier_service():
                     "description": "USPS Priority Mail International",
                     "carrier_identifier": None
                 })
-            if rates["ups_worldwide"]["amount"] is not None:
+            if rates.get("ups_worldwide") and rates["ups_worldwide"].get("amount") is not None:
                 shopify_rates.append({
                     "service_name": "UPS Worldwide Saver (test)",
                     "service_code": "ups_worldwide",
@@ -82,7 +82,7 @@ def carrier_service():
                     "carrier_identifier": None
                 })
         else:
-            if rates["no_rush"]["amount"] is not None:
+            if rates.get("no_rush") and rates["no_rush"].get("amount") is not None:
                 shopify_rates.append({
                     "service_name": "No Rush Shipping (test)",
                     "service_code": "no_rush",
@@ -91,7 +91,7 @@ def carrier_service():
                     "description": "Lowest cost via USPS or UPS Ground Saver",
                     "carrier_identifier": None
                 })
-            if rates["ups_ground"]["amount"] is not None:
+            if rates.get("ups_ground") and rates["ups_ground"].get("amount") is not None:
                 shopify_rates.append({
                     "service_name": "UPS Ground (test)",
                     "service_code": "ups_ground",
@@ -100,7 +100,7 @@ def carrier_service():
                     "description": "Standard UPS Ground shipping",
                     "carrier_identifier": None
                 })
-            if rates["usps_priority"]["amount"] is not None:
+            if rates.get("usps_priority") and rates["usps_priority"].get("amount") is not None:
                 shopify_rates.append({
                     "service_name": "USPS Priority Mail (test)",
                     "service_code": "usps_priority",
@@ -114,6 +114,7 @@ def carrier_service():
     except Exception as e:
         logging.error(f"CarrierService error: {e}")
         return Response(json.dumps({"rates": []}), mimetype="application/json")
+
 
 @app.route("/estimate-shipping", methods=["GET"])
 def estimate_shipping():
@@ -148,42 +149,44 @@ def estimate_shipping():
 
         rates = get_shipping_rates(to_address, box_info["box_dimensions"], total_weight)
 
-        formatted_rates = {
-            "no_rush": {
-                "label": "No Rush Shipping",
-                "service": "usps_ground_advantage",
-                "amount": rates["no_rush"]["amount"],
-                "delivery_days": rates["no_rush"]["delivery_days"]
-            },
-            "ups_ground": {
-                "label": "UPS Ground",
-                "service": "ups_ground",
-                "amount": rates["ups_ground"]["amount"],
-                "delivery_days": rates["ups_ground"]["delivery_days"]
-            },
-            "usps_priority": {
-                "label": "USPS Priority Mail",
-                "service": "usps_priority_mail",
-                "amount": rates["usps_priority"]["amount"],
-                "delivery_days": rates["usps_priority"]["delivery_days"]
-            }
-        }
-
-        if to_address.get("country") in ["CA", "MX", "AU"]:
-            formatted_rates = {
-                "usps_priority_intl": {
+        formatted_rates = {}
+        if to_address.get("country") in ["CA", "MX", "AU"] and rates.get("usps_priority_intl") and rates.get("ups_worldwide"):
+            if rates["usps_priority_intl"].get("amount") is not None:
+                formatted_rates["usps_priority_intl"] = {
                     "label": "USPS Priority Mail International",
                     "service": "usps_priority_mail_international",
                     "amount": rates["usps_priority_intl"]["amount"],
                     "delivery_days": rates["usps_priority_intl"]["delivery_days"]
-                },
-                "ups_worldwide": {
+                }
+            if rates["ups_worldwide"].get("amount") is not None:
+                formatted_rates["ups_worldwide"] = {
                     "label": "UPS Worldwide Saver",
                     "service": "ups_worldwide_saver",
                     "amount": rates["ups_worldwide"]["amount"],
                     "delivery_days": rates["ups_worldwide"]["delivery_days"]
                 }
-            }
+        else:
+            if rates.get("no_rush") and rates["no_rush"].get("amount") is not None:
+                formatted_rates["no_rush"] = {
+                    "label": "No Rush Shipping",
+                    "service": "usps_ground_advantage",
+                    "amount": rates["no_rush"]["amount"],
+                    "delivery_days": rates["no_rush"]["delivery_days"]
+                }
+            if rates.get("ups_ground") and rates["ups_ground"].get("amount") is not None:
+                formatted_rates["ups_ground"] = {
+                    "label": "UPS Ground",
+                    "service": "ups_ground",
+                    "amount": rates["ups_ground"]["amount"],
+                    "delivery_days": rates["ups_ground"]["delivery_days"]
+                }
+            if rates.get("usps_priority") and rates["usps_priority"].get("amount") is not None:
+                formatted_rates["usps_priority"] = {
+                    "label": "USPS Priority Mail",
+                    "service": "usps_priority_mail",
+                    "amount": rates["usps_priority"]["amount"],
+                    "delivery_days": rates["usps_priority"]["delivery_days"]
+                }
 
         return Response(json.dumps({
             "box": box_info["box"],
