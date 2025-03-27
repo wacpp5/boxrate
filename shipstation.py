@@ -9,6 +9,8 @@ SHIPSTATION_API_KEY = os.getenv("SHIPSTATION_API_KEY")
 SHIPSTATION_API_SECRET = os.getenv("SHIPSTATION_API_SECRET")
 
 def get_shipping_rates(to_address, box_dimensions, weight):
+    print("📣 get_shipping_rates was called")
+
     url = "https://ssapi.shipstation.com/shipments/getrates"
 
     payload = {
@@ -40,9 +42,11 @@ def get_shipping_rates(to_address, box_dimensions, weight):
     )
 
     if response.status_code != 200:
+        print("❌ ShipStation API error:", response.status_code, response.text)
         return {"error": f"ShipStation error {response.status_code}: {response.text}"}
 
     rates = response.json()
+    print("📦 ShipStation raw rates:\n" + json.dumps(rates, indent=2))
 
     is_international = to_address.get("country") not in ["US", None]
     international_services = [
@@ -104,8 +108,15 @@ def get_shipping_rates(to_address, box_dimensions, weight):
                 "delivery_days": rate.get("deliveryDays")
             }
 
-    # 🚀 Force-print debug output to show in Render logs
-    print("📦 ShipStation raw rates:\n" + json.dumps(rates, indent=2))
     print("✅ Processed rate map:\n" + json.dumps(rate_map, indent=2))
 
-    return rate_map
+    # 🧪 Temporary hardcoded test return (override to prove UI works)
+    # Comment this out if ShipStation returns valid rates
+    print("⚠️ Returning fallback test rates")
+    return {
+        "no_rush": {"amount": 6.99, "delivery_days": 5},
+        "ups_ground": {"amount": 8.49, "delivery_days": 3},
+        "usps_priority": {"amount": 9.99, "delivery_days": 2}
+    }
+
+    # return rate_map
