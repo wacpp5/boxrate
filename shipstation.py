@@ -1,6 +1,7 @@
 import os
 import json
 import requests
+import logging
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -64,7 +65,7 @@ def get_shipping_rates(to_address, box_dimensions, weight):
         elif code in ["usps_priority_mail", "ups_ground"]:
             rate["shipmentCost"] = float(rate["shipmentCost"]) + 2.00
 
-# Map rates into dictionary format
+    # Map rates into dictionary format
     rate_map = {
         "no_rush": {},
         "ups_ground": {},
@@ -76,17 +77,39 @@ def get_shipping_rates(to_address, box_dimensions, weight):
     for rate in rates:
         code = rate.get("serviceCode")
         if code == "usps_ground_advantage":
-            rate_map["no_rush"] = {"amount": rate["shipmentCost"], "delivery_days": rate.get("deliveryDays")}
+            rate_map["no_rush"] = {
+                "amount": rate["shipmentCost"],
+                "delivery_days": rate.get("deliveryDays")
+            }
         elif code == "ups_ground_saver":
             if "amount" not in rate_map["no_rush"] or rate["shipmentCost"] < rate_map["no_rush"]["amount"]:
-                rate_map["no_rush"] = {"amount": rate["shipmentCost"], "delivery_days": rate.get("deliveryDays")}
+                rate_map["no_rush"] = {
+                    "amount": rate["shipmentCost"],
+                    "delivery_days": rate.get("deliveryDays")
+                }
         elif code == "ups_ground":
-            rate_map["ups_ground"] = {"amount": rate["shipmentCost"], "delivery_days": rate.get("deliveryDays")}
+            rate_map["ups_ground"] = {
+                "amount": rate["shipmentCost"],
+                "delivery_days": rate.get("deliveryDays")
+            }
         elif code == "usps_priority_mail":
-            rate_map["usps_priority"] = {"amount": rate["shipmentCost"], "delivery_days": rate.get("deliveryDays")}
+            rate_map["usps_priority"] = {
+                "amount": rate["shipmentCost"],
+                "delivery_days": rate.get("deliveryDays")
+            }
         elif code == "usps_priority_mail_international":
-            rate_map["usps_priority_intl"] = {"amount": rate["shipmentCost"], "delivery_days": rate.get("deliveryDays")}
+            rate_map["usps_priority_intl"] = {
+                "amount": rate["shipmentCost"],
+                "delivery_days": rate.get("deliveryDays")
+            }
         elif code == "ups_worldwide_saver":
-            rate_map["ups_worldwide"] = {"amount": rate["shipmentCost"], "delivery_days": rate.get("deliveryDays")}
+            rate_map["ups_worldwide"] = {
+                "amount": rate["shipmentCost"],
+                "delivery_days": rate.get("deliveryDays")
+            }
+
+    # 🪵 Log raw and processed rate data
+    logging.info("📦 ShipStation raw rates:\n%s", json.dumps(rates, indent=2))
+    logging.info("✅ Processed rate map:\n%s", json.dumps(rate_map, indent=2))
 
     return rate_map
