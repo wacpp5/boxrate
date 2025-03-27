@@ -9,11 +9,19 @@ from shipstation import get_shipping_rates
 from utils import convert_decimals
 from dotenv import load_dotenv
 
+
+
+
 load_dotenv()
 logging.basicConfig(level=logging.INFO)
 
 app = Flask(__name__)
 CORS(app)
+
+@app.route("/estimate-shipping", methods=["GET"])
+def estimate_shipping():
+    print("🚀 estimate_shipping endpoint hit")
+
 
 @app.route("/carrier-service", methods=["POST"])
 def carrier_service():
