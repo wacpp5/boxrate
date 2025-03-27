@@ -2,10 +2,11 @@ import os
 import json
 import requests
 import logging
-logging.basicConfig(level=logging.INFO, force=True)
 from dotenv import load_dotenv
 
 load_dotenv()
+
+logging.basicConfig(level=logging.INFO, force=True)  # Force logging to show in Render
 
 SHIPSTATION_API_KEY = os.getenv("SHIPSTATION_API_KEY")
 SHIPSTATION_API_SECRET = os.getenv("SHIPSTATION_API_SECRET")
@@ -14,7 +15,7 @@ def get_shipping_rates(to_address, box_dimensions, weight):
     url = "https://ssapi.shipstation.com/shipments/getrates"
 
     payload = {
-        "carrierCode": None,  # allow all carriers
+        "carrierCode": None,
         "fromPostalCode": os.getenv("SHIP_FROM_ZIP"),
         "toState": to_address.get("state"),
         "toCountry": to_address.get("country"),
@@ -46,7 +47,6 @@ def get_shipping_rates(to_address, box_dimensions, weight):
 
     rates = response.json()
 
-    # 🧩 International rate support
     is_international = to_address.get("country") not in ["US", None]
     international_services = [
         "usps_priority_mail_international",
@@ -58,15 +58,13 @@ def get_shipping_rates(to_address, box_dimensions, weight):
         for rate in rates:
             rate["shipmentCost"] = float(rate["shipmentCost"]) + 4.00
 
-    # 🧮 Apply handling/markup
     for rate in rates:
         code = rate.get("serviceCode")
         if code in ["usps_ground_advantage", "ups_ground_saver"]:
-            rate["shipmentCost"] = float(rate["shipmentCost"]) * 1.06  # 6% markup
+            rate["shipmentCost"] = float(rate["shipmentCost"]) * 1.06
         elif code in ["usps_priority_mail", "ups_ground"]:
             rate["shipmentCost"] = float(rate["shipmentCost"]) + 2.00
 
-    # Map rates into dictionary format
     rate_map = {
         "no_rush": {},
         "ups_ground": {},
@@ -109,7 +107,6 @@ def get_shipping_rates(to_address, box_dimensions, weight):
                 "delivery_days": rate.get("deliveryDays")
             }
 
-    # 🪵 Log raw and processed rate data
     logging.info("📦 ShipStation raw rates:\n%s", json.dumps(rates, indent=2))
     logging.info("✅ Processed rate map:\n%s", json.dumps(rate_map, indent=2))
 
