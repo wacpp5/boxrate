@@ -1,12 +1,9 @@
 import os
 import json
 import requests
-import logging
 from dotenv import load_dotenv
 
 load_dotenv()
-
-logging.basicConfig(level=logging.INFO, force=True)  # Force logging to show in Render
 
 SHIPSTATION_API_KEY = os.getenv("SHIPSTATION_API_KEY")
 SHIPSTATION_API_SECRET = os.getenv("SHIPSTATION_API_SECRET")
@@ -107,7 +104,8 @@ def get_shipping_rates(to_address, box_dimensions, weight):
                 "delivery_days": rate.get("deliveryDays")
             }
 
-    logging.info("📦 ShipStation raw rates:\n%s", json.dumps(rates, indent=2))
-    logging.info("✅ Processed rate map:\n%s", json.dumps(rate_map, indent=2))
+    # 🚀 Force-print debug output to show in Render logs
+    print("📦 ShipStation raw rates:\n" + json.dumps(rates, indent=2))
+    print("✅ Processed rate map:\n" + json.dumps(rate_map, indent=2))
 
     return rate_map
