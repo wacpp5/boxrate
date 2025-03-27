@@ -9,7 +9,7 @@ SHIPSTATION_API_KEY = os.getenv("SHIPSTATION_API_KEY")
 SHIPSTATION_API_SECRET = os.getenv("SHIPSTATION_API_SECRET")
 
 def get_shipping_rates(to_address, box_dimensions, weight):
-    print("📣 get_shipping_rates was called")
+    print("🚨 get_shipping_rates triggered with box:", box_dimensions, "and weight:", weight)
 
     url = "https://ssapi.shipstation.com/shipments/getrates"
 
@@ -110,13 +110,12 @@ def get_shipping_rates(to_address, box_dimensions, weight):
 
     print("✅ Processed rate map:\n" + json.dumps(rate_map, indent=2))
 
-    # 🧪 Temporary hardcoded test return (override to prove UI works)
-    # Comment this out if ShipStation returns valid rates
-    print("⚠️ Returning fallback test rates")
-    return {
-        "no_rush": {"amount": 6.99, "delivery_days": 5},
-        "ups_ground": {"amount": 8.49, "delivery_days": 3},
-        "usps_priority": {"amount": 9.99, "delivery_days": 2}
-    }
+    # 🚫 Commented out fallback return
+    # print("⚠️ Returning fallback test rates")
+    # return {
+    #     "no_rush": {"amount": 6.99, "delivery_days": 5},
+    #     "ups_ground": {"amount": 8.49, "delivery_days": 3},
+    #     "usps_priority": {"amount": 9.99, "delivery_days": 2}
+    # }
 
-    # return rate_map
+    return rate_map
