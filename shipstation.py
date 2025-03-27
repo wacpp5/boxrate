@@ -2,6 +2,7 @@ import os
 import json
 import requests
 import logging
+logging.basicConfig(level=logging.INFO, force=True)
 from dotenv import load_dotenv
 
 load_dotenv()
