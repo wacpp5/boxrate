@@ -11,7 +11,8 @@ SHIPSTATION_API_SECRET = os.getenv("SHIPSTATION_API_SECRET")
 def get_shipping_rates(to_address, box_dimensions, weight):
     url = "https://ssapi.shipstation.com/shipments/getrates"
 
-    base_payload = {
+    payload = {
+        "carrierCode": None,
         "fromPostalCode": os.getenv("SHIP_FROM_ZIP"),
         "toState": to_address.get("state"),
         "toCountry": to_address.get("country"),
@@ -31,49 +32,72 @@ def get_shipping_rates(to_address, box_dimensions, weight):
         "residential": False
     }
 
-    rates = []
+    response = requests.post(
+        url,
+        data=json.dumps(payload),
+        headers={"Content-Type": "application/json"},
+        auth=(SHIPSTATION_API_KEY, SHIPSTATION_API_SECRET)
+    )
 
-    # Fetch rates from USPS via stamps_com
-    for carrier in ["stamps_com", "ups_walleted"]:
-        payload = {**base_payload, "carrierCode": carrier}
+    if response.status_code != 200:
+        return {"error": f"ShipStation error {response.status_code}: {response.text}"}
 
-        response = requests.post(
-            url,
-            data=json.dumps(payload),
-            headers={"Content-Type": "application/json"},
-            auth=(SHIPSTATION_API_KEY, SHIPSTATION_API_SECRET)
-        )
+    rates = response.json()
+    is_international = to_address.get("country") not in ["US", None]
 
-        if response.status_code == 200:
-            rates.extend(response.json())
-        else:
-            print(f"❌ Error from {carrier}: {response.status_code} - {response.text}")
-
-    # Apply handling or markup
-    for rate in rates:
-        code = rate.get("serviceCode")
-        if code in ["usps_ground_advantage", "ups_ground_saver"]:
-            rate["shipmentCost"] = float(rate["shipmentCost"]) * 1.06
-        elif code in ["ups_ground", "usps_priority_mail"]:
-            rate["shipmentCost"] = float(rate["shipmentCost"]) + 2.00
-
-    # Build simplified rate map
     rate_map = {
         "no_rush": {},
         "ups_ground": {},
-        "usps_priority": {}
+        "usps_priority": {},
+        "usps_priority_intl": {},
+        "ups_worldwide": {}
     }
 
     for rate in rates:
         code = rate.get("serviceCode")
-        if code == "usps_ground_advantage":
-            rate_map["no_rush"] = {"amount": rate["shipmentCost"], "delivery_days": rate.get("deliveryDays")}
-        elif code == "ups_ground_saver":
-            if "amount" not in rate_map["no_rush"] or rate["shipmentCost"] < rate_map["no_rush"]["amount"]:
-                rate_map["no_rush"] = {"amount": rate["shipmentCost"], "delivery_days": rate.get("deliveryDays")}
-        elif code == "ups_ground":
-            rate_map["ups_ground"] = {"amount": rate["shipmentCost"], "delivery_days": rate.get("deliveryDays")}
-        elif code == "usps_priority_mail":
-            rate_map["usps_priority"] = {"amount": rate["shipmentCost"], "delivery_days": rate.get("deliveryDays")}
+        cost = float(rate["shipmentCost"])
+
+        if is_international and to_address.get("country") in ["CA", "MX", "AU"]:
+            if code == "usps_priority_mail_international":
+                cost += 4.00
+                rate_map["usps_priority_intl"] = {
+                    "amount": cost,
+                    "delivery_days": rate.get("deliveryDays")
+                }
+            elif code == "ups_worldwide_saver":
+                cost += 4.00
+                rate_map["ups_worldwide"] = {
+                    "amount": cost,
+                    "delivery_days": rate.get("deliveryDays")
+                }
+        else:
+            if code == "usps_ground_advantage":
+                cost *= 1.06  # 6% markup
+                rate_map["no_rush"] = {
+                    "amount": cost,
+                    "delivery_days": rate.get("deliveryDays")
+                }
+            elif code == "ups_ground_saver":
+                cost *= 1.06  # 6% markup
+                if (
+                    "amount" not in rate_map["no_rush"]
+                    or cost < rate_map["no_rush"]["amount"]
+                ):
+                    rate_map["no_rush"] = {
+                        "amount": cost,
+                        "delivery_days": rate.get("deliveryDays")
+                    }
+            elif code == "ups_ground":
+                cost += 2.00
+                rate_map["ups_ground"] = {
+                    "amount": cost,
+                    "delivery_days": rate.get("deliveryDays")
+                }
+            elif code == "usps_priority_mail":
+                cost += 2.00
+                rate_map["usps_priority"] = {
+                    "amount": cost,
+                    "delivery_days": rate.get("deliveryDays")
+                }
 
     return rate_map
