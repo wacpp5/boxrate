@@ -113,11 +113,17 @@ def estimate_shipping():
         if not items:
             use_fallback = True
 
-        box_info = select_best_box(items) if not use_fallback else {"box": "10x8x6", "box_dimensions": {"length": 10, "width": 8, "height": 6}}
+        box_info = select_best_box(items) if not use_fallback else {
+            "box": "10x8x6",
+            "box_dimensions": {"length": 10, "width": 8, "height": 6}
+        }
 
         if "error" in box_info:
             use_fallback = True
-            box_info = {"box": "10x8x6", "box_dimensions": {"length": 10, "width": 8, "height": 6}}
+            box_info = {
+                "box": "10x8x6",
+                "box_dimensions": {"length": 10, "width": 8, "height": 6}
+            }
 
         total_weight = sum(float(item["weight"]) for item in items) if not use_fallback else 3.0
 
@@ -128,26 +134,28 @@ def estimate_shipping():
 
         rates = get_shipping_rates(to_address, box_info["box_dimensions"], total_weight)
 
-        formatted_rates = {
-            "no_rush": {
+        formatted_rates = {}
+        if rates.get("no_rush") and rates["no_rush"].get("amount") is not None:
+            formatted_rates["no_rush"] = {
                 "label": "No Rush Shipping",
                 "service": "usps_ground_advantage",
                 "amount": rates["no_rush"]["amount"],
                 "delivery_days": rates["no_rush"]["delivery_days"]
-            },
-            "ups_ground": {
+            }
+        if rates.get("ups_ground") and rates["ups_ground"].get("amount") is not None:
+            formatted_rates["ups_ground"] = {
                 "label": "UPS Ground",
                 "service": "ups_ground",
                 "amount": rates["ups_ground"]["amount"],
                 "delivery_days": rates["ups_ground"]["delivery_days"]
-            },
-            "usps_priority": {
+            }
+        if rates.get("usps_priority") and rates["usps_priority"].get("amount") is not None:
+            formatted_rates["usps_priority"] = {
                 "label": "USPS Priority Mail",
                 "service": "usps_priority_mail",
                 "amount": rates["usps_priority"]["amount"],
                 "delivery_days": rates["usps_priority"]["delivery_days"]
             }
-        }
 
         return Response(json.dumps({
             "box": box_info["box"],
@@ -157,6 +165,7 @@ def estimate_shipping():
     except Exception as e:
         logging.error(f"EstimateShipping error: {e}")
         return Response(json.dumps({"error": str(e)}), mimetype="application/json", status=500)
+
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)), debug=True)
