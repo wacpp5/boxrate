@@ -7,20 +7,12 @@ load_dotenv()
 
 SHIPSTATION_API_KEY = os.getenv("SHIPSTATION_API_KEY")
 SHIPSTATION_API_SECRET = os.getenv("SHIPSTATION_API_SECRET")
-SHIP_FROM_ZIP = os.getenv("SHIP_FROM_ZIP")
 
-# Add your carrier codes
-CARRIER_CODES = {
-    "usps": "se-1289533",
-    "ups": "se-1289534"
-}
-
-def fetch_rates_for_carrier(carrier_code, to_address, box_dimensions, weight):
+def get_shipping_rates(to_address, box_dimensions, weight):
     url = "https://ssapi.shipstation.com/shipments/getrates"
 
-    payload = {
-        "carrierCode": carrier_code,
-        "fromPostalCode": SHIP_FROM_ZIP,
+    base_payload = {
+        "fromPostalCode": os.getenv("SHIP_FROM_ZIP"),
         "toState": to_address.get("state"),
         "toCountry": to_address.get("country"),
         "toPostalCode": to_address.get("postal_code"),
@@ -39,40 +31,40 @@ def fetch_rates_for_carrier(carrier_code, to_address, box_dimensions, weight):
         "residential": False
     }
 
-    response = requests.post(
-        url,
-        data=json.dumps(payload),
-        headers={"Content-Type": "application/json"},
-        auth=(SHIPSTATION_API_KEY, SHIPSTATION_API_SECRET)
-    )
+    rates = []
 
-    if response.status_code != 200:
-        return []
+    # Fetch rates from USPS via stamps_com
+    for carrier in ["stamps_com", "ups_walleted"]:
+        payload = {**base_payload, "carrierCode": carrier}
 
-    return response.json()
+        response = requests.post(
+            url,
+            data=json.dumps(payload),
+            headers={"Content-Type": "application/json"},
+            auth=(SHIPSTATION_API_KEY, SHIPSTATION_API_SECRET)
+        )
 
-def get_shipping_rates(to_address, box_dimensions, weight):
-    all_rates = []
+        if response.status_code == 200:
+            rates.extend(response.json())
+        else:
+            print(f"❌ Error from {carrier}: {response.status_code} - {response.text}")
 
-    for carrier_name, carrier_code in CARRIER_CODES.items():
-        rates = fetch_rates_for_carrier(carrier_code, to_address, box_dimensions, weight)
-        all_rates.extend(rates)
-
-    # Apply handling/markup
-    for rate in all_rates:
+    # Apply handling or markup
+    for rate in rates:
         code = rate.get("serviceCode")
         if code in ["usps_ground_advantage", "ups_ground_saver"]:
             rate["shipmentCost"] = float(rate["shipmentCost"]) * 1.06
         elif code in ["ups_ground", "usps_priority_mail"]:
             rate["shipmentCost"] = float(rate["shipmentCost"]) + 2.00
 
+    # Build simplified rate map
     rate_map = {
         "no_rush": {},
         "ups_ground": {},
         "usps_priority": {}
     }
 
-    for rate in all_rates:
+    for rate in rates:
         code = rate.get("serviceCode")
         if code == "usps_ground_advantage":
             rate_map["no_rush"] = {"amount": rate["shipmentCost"], "delivery_days": rate.get("deliveryDays")}
