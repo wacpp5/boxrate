@@ -11,7 +11,7 @@ SHIPSTATION_API_SECRET = os.getenv("SHIPSTATION_API_SECRET")
 def get_shipping_rates(to_address, box_dimensions, weight):
     url = "https://ssapi.shipstation.com/shipments/getrates"
 
-    payload = {
+    base_payload = {
         "fromPostalCode": os.getenv("SHIP_FROM_ZIP"),
         "toState": to_address.get("state"),
         "toCountry": to_address.get("country"),
@@ -31,20 +31,24 @@ def get_shipping_rates(to_address, box_dimensions, weight):
         "residential": False
     }
 
-    response = requests.post(
-        url,
-        data=json.dumps(payload),
-        headers={"Content-Type": "application/json"},
-        auth=(SHIPSTATION_API_KEY, SHIPSTATION_API_SECRET)
-    )
+    rates = []
 
-    try:
-        rates = response.json()
-    except Exception:
-        return {"error": f"ShipStation error {response.status_code}: {response.text}"}
+    # Fetch rates from USPS via stamps_com
+    for carrier in ["stamps_com", "ups_walleted"]:
+        payload = {**base_payload, "carrierCode": carrier}
 
-    if not isinstance(rates, list):
-        return {"error": f"ShipStation error {response.status_code}: {response.text}"}
+        response = requests.post(
+            url,
+            data=json.dumps(payload),
+            headers={"Content-Type": "application/json"},
+            auth=(SHIPSTATION_API_KEY, SHIPSTATION_API_SECRET)
+        )
+
+        if response.status_code == 200:
+            rates.extend(response.json())
+        else:
+            print(f"❌ Error from {carrier}: {response.status_code} - {response.text}")
+
 
     # 🧮 Adjust prices based on service
     for rate in rates:
