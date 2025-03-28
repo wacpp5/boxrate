@@ -55,6 +55,8 @@ def estimate_shipping():
         }
 
         rates = get_shipping_rates(to_address, box_info["box_dimensions"], total_weight)
+        logging.info(f"📦 Raw ShipStation Rates: {json.dumps(rates, indent=2)}")
+
 
         formatted_rates = {}
         if to_address.get("country") in ["CA", "MX", "AU"]:
