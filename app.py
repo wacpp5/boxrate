@@ -1,3 +1,16 @@
+import os
+import json
+import logging
+from flask import Flask, request, Response
+from flask_cors import CORS
+from dotenv import load_dotenv
+
+load_dotenv()
+logging.basicConfig(level=logging.INFO)
+
+app = Flask(__name__)
+CORS(app)
+
 @app.route("/estimate-shipping", methods=["GET"])
 def estimate_shipping():
     try:
