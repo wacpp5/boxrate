@@ -4,6 +4,8 @@ import logging
 from flask import Flask, request, Response
 from flask_cors import CORS
 from dotenv import load_dotenv
+from shopify import build_item_list
+
 
 load_dotenv()
 logging.basicConfig(level=logging.INFO)
