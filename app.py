@@ -99,3 +99,8 @@ def estimate_shipping():
     except Exception as e:
         logging.error(f"EstimateShipping error: {e}")
         return Response(json.dumps({"error": str(e)}), mimetype="application/json", status=500)
+
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 5000))  # Render assigns a port
+    app.run(host="0.0.0.0", port=port, debug=True)
+
